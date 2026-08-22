@@ -1,24 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Поле ввода: ровно 3 строки, не больше -->
     <EditText
         android:id="@+id/noteText"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:hint="Здесь появится твой текст..."
+        android:layout_height="wrap_content"
+        android:hint="Что записать?"
+        android:textSize="16sp"
+        android:textColor="#000000"
+        android:textColorHint="#999999"
+        android:minLines="3"
+        android:inputType="textMultiLine"
+        android:background="#FFFFFF"
         android:gravity="top"
-        android:inputType="textMultiLine" />
+        android:layout_marginBottom="12dp"/>
 
+    <!-- Кнопки: крупные, заметные -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+        android:weightSum="2"
+        android:baselineAligned="false">
 
         <Button
             android:id="@+id/btnRecord"
@@ -26,13 +36,32 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="🎤 Голос"
-            android:layout_marginEnd="8dp"/>
+            android:textColor="#000000"
+            android:backgroundTint="#E0E0E0"
+            android:paddingVertical="14dp"
+            android:textSize="15sp"
+            android:layout_marginEnd="6dp"/>
 
         <Button
             android:id="@+id/btnSave"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="💾 Сохранить"/>
+            android:text="💾 Сохранить"
+            android:textColor="#000000"
+            android:backgroundTint="#4CAF50"
+            android:paddingVertical="14dp"
+            android:textSize="15sp"
+            android:layout_marginStart="6dp"/>
     </LinearLayout>
+
+    <!-- Сюда программно добавится кнопка «Удалить» (между кнопками и списком) -->
+
+    <!-- Список: забирает всё оставшееся место -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 </LinearLayout>
+

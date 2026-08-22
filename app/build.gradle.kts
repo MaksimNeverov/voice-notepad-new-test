@@ -42,6 +42,19 @@ android {
         implementation(libs.androidx.core.ktx)
         implementation(libs.material)
 
+        // --- НОВЫЕ ЗАВИСИМОСТИ ДЛЯ ТВОЕГО ПРОЕКТА ---
+
+        // 1. RecyclerView (чтобы список заметок рисовался)
+        implementation(libs.androidx.recyclerview)
+
+        // 2. Корутины (для Flow, StateFlow, viewModelScope)
+        implementation(libs.kotlinx.coroutines.android)
+
+        // 3. Lifecycle + ViewModel KTX (для stateIn, viewModelScope и т.д.)
+        implementation(libs.androidx.lifecycle.viewmodel.ktx)
+        implementation(libs.androidx.lifecycle.runtime.ktx)
+        // --------------------------------------------
+
         testImplementation(libs.junit)
         androidTestImplementation(libs.androidx.espresso.core)
         androidTestImplementation(libs.androidx.junit)
