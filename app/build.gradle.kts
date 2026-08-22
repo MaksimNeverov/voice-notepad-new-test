@@ -1,17 +1,18 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.devtoolsKsp)
 }
 
 android {
     namespace = "com.example.emptyviewsactivity"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.emptyviewsactivity"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -20,24 +21,34 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
+    android {
+        compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_17  // или VERSION_22
+            targetCompatibility = JavaVersion.VERSION_17  // или VERSION_22
+        }
 
-dependencies {
-    implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
+        kotlin {
+            jvmToolchain(17)  // или 22
+        }
+    }
+
+    dependencies {
+        implementation(libs.androidx.activity.ktx)
+        implementation(libs.androidx.appcompat)
+        implementation(libs.androidx.constraintlayout)
+        implementation(libs.androidx.core.ktx)
+        implementation(libs.material)
+
+        testImplementation(libs.junit)
+        androidTestImplementation(libs.androidx.espresso.core)
+        androidTestImplementation(libs.androidx.junit)
+
+        // Room (только KSP!)
+        implementation(libs.room.runtime)
+        implementation(libs.room.ktx)
+        ksp(libs.room.compiler)
+    }
 }
