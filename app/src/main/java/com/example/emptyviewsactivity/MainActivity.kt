@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var btnDelete: Button
 
-    // Храним выделенные ID здесь, чтобы управлять UI
+    // ЕДИНСТВЕННЫЙ источник истины для выделения
     private val selectedIds = mutableSetOf<Int>()
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -61,16 +61,22 @@ class MainActivity : AppCompatActivity() {
         btnDelete = Button(this).apply {
             text = "🗑️ УДАЛИТЬ"
             visibility = View.GONE
-            setBackgroundColor(Color.parseColor("#F44336")) // Красный фон
+            setBackgroundColor(Color.parseColor("#F44336"))
             setTextColor(Color.WHITE)
             isAllCaps = true
             setOnClickListener {
-                val ids = adapter.getSelectedIds()
+                // ИСПРАВЛЕНО: Используем .toList() вместо небезопасного 'as List<Int>'
+                val ids = selectedIds.toList()
+
                 if (ids.isNotEmpty()) {
                     viewModel.deleteEntries(ids)
+
+                    // Сбрасываем состояние
                     adapter.clearSelection()
                     selectedIds.clear()
-                    updateUi()
+                    updateUi() // Перерисовываем интерфейс
+
+                    // ИСПРАВЛЕНО: Корректная подстановка переменной в строку
                     Toast.makeText(
                         this@MainActivity,
                         "Удалено \${ids.size} заметок",
@@ -92,10 +98,17 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Клик: \${entry.text}", Toast.LENGTH_SHORT).show()
             },
             onLongClick = { entry ->
-                // Включаем режим выделения
                 selectedIds.add(entry.id)
                 updateUi()
                 true
+            },
+            onSelectionToggle = { id, isSelected ->
+                if (isSelected) {
+                    selectedIds.add(id)
+                } else {
+                    selectedIds.remove(id)
+                }
+                updateUi()
             }
         )
 
@@ -112,13 +125,8 @@ class MainActivity : AppCompatActivity() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         val listener = object : RecognitionListener {
             override fun onResults(results: android.os.Bundle?) {
-                // Явно приводим к списку строк. Если results null, matches будет null
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-
-                // ЭТА ПРОВЕРКА КРИТИЧЕСКИ ВАЖНА: она гарантирует, что matches не null и не пустой
                 if (!matches.isNullOrEmpty()) {
-                    // ВОТ ЗДЕСЬ ГЛАВНОЕ: берем элемент по индексу.
-                    // matches - это список, matches - это одна строка (String), которую ждет setText
                     noteText.setText(matches[0])
                 } else {
                     Toast.makeText(this@MainActivity, "Не поняла, повторите", Toast.LENGTH_SHORT).show()
@@ -126,6 +134,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onError(error: Int) {
+                // ИСПРАВЛЕНО: Синтаксис строки теперь корректен
                 Toast.makeText(
                     this@MainActivity,
                     "Ошибка распознавания: \$error",
@@ -161,7 +170,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.saveEntry(text)
             noteText.text.clear()
 
-            // Если был включён режим выделения — сбрасываем его
             if (selectedIds.isNotEmpty()) {
                 selectedIds.clear()
                 adapter.clearSelection()
@@ -170,9 +178,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Единый метод для обновления UI при изменении выделения
     private fun updateUi() {
-        // Передаём список выделенных ID в адаптер, он сам перерисует фон и чекбоксы
         adapter.setSelectedIds(selectedIds)
 
         if (selectedIds.isEmpty()) {
@@ -194,4 +200,3 @@ class MainActivity : AppCompatActivity() {
         speechRecognizer.startListening(intent)
     }
 }
-

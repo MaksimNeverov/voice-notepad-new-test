@@ -13,17 +13,19 @@ import androidx.recyclerview.widget.RecyclerView
 
 class EntryAdapter(
     private var onItemClick: (Entry) -> Unit = {},
-    private var onLongClick: (Entry) -> Boolean = { false }
+    private var onLongClick: (Entry) -> Boolean = { false },
+    private var onSelectionToggle: (Int, Boolean) -> Unit = { _, _ -> }
 ) : ListAdapter<Entry, EntryAdapter.EntryViewHolder>(EntryDiffCallback()) {
 
-    // Состояние выделения теперь управляется извне (из MainActivity)
-    private val selectedIds = mutableSetOf<Int>()
+    // УБРАЛИ: private val selectedIds = mutableSetOf<Int>()
+    // Состояние теперь хранится только в Activity.
+    // Здесь мы храним только временную копию для быстрой проверки в onBindViewHolder,
+    // но она обновляется ТОЛЬКО извне через setSelectedIds.
+    private var currentSelectedIds = emptySet<Int>()
 
-    // Публичный метод для установки выделенных ID из Activity
     fun setSelectedIds(ids: Collection<Int>) {
-        selectedIds.clear()
-        selectedIds.addAll(ids)
-        notifyDataSetChanged() // Перерисовываем все строки, чтобы покрасить фон
+        currentSelectedIds = ids.toSet()
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EntryViewHolder {
@@ -34,7 +36,8 @@ class EntryAdapter(
 
     override fun onBindViewHolder(holder: EntryViewHolder, position: Int) {
         val entry = getItem(position)
-        holder.bind(entry, selectedIds.contains(entry.id))
+        // Передаем текущее состояние из Activity
+        holder.bind(entry, isSelected = entry.id in currentSelectedIds)
     }
 
     inner class EntryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -48,51 +51,46 @@ class EntryAdapter(
             tvText.text = entry.text
             tvDate.text = dateStr
 
-            // 1. Меняем цвет фона строки: серый если выделено, белый если нет
+            // 1. Визуальное обновление фона и чекбокса строго по флагу isSelected
             if (isSelected) {
-                row.setBackgroundColor(Color.parseColor("#E0E0E0")) // Плотный светло-серый
+                row.setBackgroundColor(Color.parseColor("#E0E0E0"))
                 cbSelect.isChecked = true
+                cbSelect.visibility = View.VISIBLE
             } else {
                 row.setBackgroundColor(Color.WHITE)
                 cbSelect.isChecked = false
+                cbSelect.visibility = View.GONE
             }
 
-            // 2. Показываем/скрываем чекбокс
-            cbSelect.visibility = if (isSelected) View.VISIBLE else View.GONE
+            // 2. УБРАЛИ: setOnCheckedChangeListener внутри bind.
+            // Чекбокс теперь только отражает состояние, он не управляет им.
+            // Управление происходит через клик по строке.
 
-            // 3. Слушатель чекбокса (переключаем состояние)
-            cbSelect.setOnCheckedChangeListener(null)
-            cbSelect.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) selectedIds.add(entry.id)
-                else selectedIds.remove(entry.id)
-                // Важно: сообщаем Activity, что список выделенных изменился
-                // Для этого можно добавить callback, но проще обновлять UI в Activity после клика
-            }
-
-            // 4. Клик по всей строке: если режим выделения — переключаем чекбокс, иначе onItemClick
+            // 3. Клик по всей строке
             itemView.setOnClickListener {
-                if (selectedIds.isNotEmpty()) {
-                    // Переключаем состояние
+                // Если режим выделения активен (хотя бы один элемент выбран в Activity)
+                if (currentSelectedIds.isNotEmpty()) {
                     val newState = !isSelected
-                    if (newState) selectedIds.add(entry.id)
-                    else selectedIds.remove(entry.id)
-                    // Обновляем UI через Activity (там будет notifyDataSetChanged)
-                    // Для простоты здесь просто обновляем локально и вызываем onItemClick как заглушку
-                    // Но лучше передавать callback для обновления UI из Activity
+                    // Сообщаем Activity об изменении состояния для этого ID
+                    onSelectionToggle(entry.id, newState)
                 } else {
+                    // Обычный клик
                     onItemClick(entry)
                 }
             }
 
-            // 5. LongClick: включаем режим выделения
+            // 4. LongClick: включаем режим выделения
             itemView.setOnLongClickListener {
-                if (selectedIds.isEmpty()) {
-                    selectedIds.add(entry.id)
-                    cbSelect.isChecked = true
+                // Если режим еще не включен (список пуст), включаем его и выбираем этот элемент
+                if (currentSelectedIds.isEmpty()) {
+                    onSelectionToggle(entry.id, true)
                     onLongClick(entry)
                     true
                 } else {
-                    false
+                    // Если режим уже включен, считаем лонгклик как обычный клик для переключения
+                    val newState = !isSelected
+                    onSelectionToggle(entry.id, newState)
+                    true
                 }
             }
         }
@@ -103,10 +101,8 @@ class EntryAdapter(
         override fun areContentsTheSame(oldItem: Entry, newItem: Entry) = oldItem == newItem
     }
 
-    fun getSelectedIds(): List<Int> = selectedIds.toList()
-
     fun clearSelection() {
-        selectedIds.clear()
+        currentSelectedIds = emptySet()
         notifyDataSetChanged()
     }
 }
